@@ -7,12 +7,10 @@
 #include <stdint.h>
 #include "cryptotils.c"
 
-uint8_t hex_char_to_value(char c);
 
-uint8_t* hex_to_binary(char* hex_string);
-
-char* binary_to_base64(uint8_t* binary_array, size_t binary_size, const char base64_chars[]);
-
-char* xor_fixed(uint8_t* binary_buffer1, uint8_t* binary_buffer2, uint8_t binary_size1, uint8_t binary_size2);
+int hex_to_int(char c);
+size_t hex_decode(const char *hex_str, uint8_t **out);
+char *base64_encode(const uint8_t *data, size_t input_length);
+void hex_to_base64(const char *hex_string);
 
 #endif
