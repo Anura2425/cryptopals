@@ -209,5 +209,4 @@ void fixed_xor(const char* buffer_a, const char* buffer_b){
     free(xor_result);
     free(raw_bytes1);
     free(raw_bytes2);
-    free(xor_result);
 }
