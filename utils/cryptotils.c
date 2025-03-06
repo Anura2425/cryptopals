@@ -5,13 +5,23 @@
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char hex_table[] = "0123456789abcdef";
 
-// Function to convert a hex character to its corresponding value
 int hex_to_int(char c) {
+    /*
+    Convert a hex character to its corresponding value
+    */
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
     if (c >= 'A' && c <= 'F') return c - 'A' + 10;
     return -1; // Invalid character
+}
+
+char int_to_hex(int n){
+    /*
+    Convert an integer value to its corresponding hex character
+    */
+    return hex_table[n];
 }
 
 size_t hex_decode(const char *hex_str, uint8_t **output) {
@@ -68,6 +78,19 @@ size_t hex_decode(const char *hex_str, uint8_t **output) {
         (*output)[j] = (high << 4) | low;
     }
     return byte_len;
+}
+
+char* xor_binary(const uint8_t* buffer_a, const uint8_t* buffer_b, size_t input_length) {
+    uint8_t* result_buffer = (uint8_t*)malloc(input_length);
+    if (result_buffer == NULL) {
+        return NULL;
+    }
+    // perform XOR on each value of the two buffers
+    for (size_t i = 0; i < input_length; i++) {
+        result_buffer[i] = buffer_a[i] ^ buffer_b[i];
+    }
+
+    return result_buffer;
 }
 
 
@@ -141,4 +164,49 @@ void hex_to_base64(const char *hex_string) {
     // Clean up memory
     free(raw_bytes);
     free(base64_result);
+}
+
+void fixed_xor(const char* buffer_a, const char* buffer_b){
+    // testing for xord binary array
+    uint8_t* raw_bytes1 = NULL;
+    size_t bytes_len1 = hex_decode(buffer_a, &raw_bytes1);
+    printf("Decoded bytes (hex): ");
+    for (size_t i = 0; i < bytes_len1; i++) {
+        printf("%02x ", raw_bytes1[i]);
+    }
+    printf("\n");
+
+    uint8_t* raw_bytes2 = NULL;
+    size_t bytes_len2 = hex_decode(buffer_b, &raw_bytes2);
+    printf("Decoded bytes (hex): ");
+    for (size_t i = 0; i < bytes_len2; i++) {
+        printf("%02x ", raw_bytes2[i]);
+    }
+    printf("\n");
+
+    if (bytes_len1 != bytes_len2) {
+        printf("Error: the input buffers must be the same length");
+        free(raw_bytes1);
+        free(raw_bytes2);
+        return;
+    }
+
+    size_t xor_len = bytes_len1;
+    uint8_t* xor_result = xor_binary(raw_bytes1, raw_bytes2, xor_len);
+    if (xor_result == NULL) {
+        printf("Error performing XOR operation\n");
+        free(raw_bytes1);
+        free(raw_bytes2);
+        return;
+    }
+
+    printf("XOR result (hex): ");
+    for (size_t i = 0; i < xor_len; i++) {
+        printf("%02x ", xor_result[i]);
+    }
+    printf("\n");
+
+    free(xor_result);
+    free(raw_bytes1);
+    free(raw_bytes2);
 }
