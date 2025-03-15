@@ -14,9 +14,9 @@ int main(int argc, char *argv[]){
     char* buffer_b = "686974207468652062756c6c277320657965";
     fixed_xor(buffer_a, buffer_b);
     // case 2: buffers are not of even length -> error message and exit code
-    printf("\n");
-    char* bad_buffer_a = "1c0111001f010100061a024b";
-    char* bad_buffer_b = "6869742074262";
-    fixed_xor(bad_buffer_a, bad_buffer_b);
+    // printf("\n");
+    // char* bad_buffer_a = "1c0111001f010100061a024b";
+    // char* bad_buffer_b = "6869742074262";
+    // fixed_xor(bad_buffer_a, bad_buffer_b);
     return 0;
 }

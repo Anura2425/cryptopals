@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -146,7 +147,7 @@ void hex_to_base64(const char *hex_string) {
     
     printf("Decoded bytes (hex): ");
     for (size_t i = 0; i < bytes_len; i++) {
-        printf("%02x ", raw_bytes[i]);
+        printf("%02x", raw_bytes[i]);
     }
     printf("\n");
     
@@ -167,7 +168,10 @@ void hex_to_base64(const char *hex_string) {
 }
 
 void fixed_xor(const char* buffer_a, const char* buffer_b){
-    // testing for xord binary array
+    /*
+    Takes two hex strings, decodes them, xors the two buffers, 
+    encodes the result back into hex (inputs must be same length)
+    */
     uint8_t* raw_bytes1 = NULL;
     size_t bytes_len1 = hex_decode(buffer_a, &raw_bytes1);
     printf("Decoded bytes (hex): ");
@@ -209,4 +213,66 @@ void fixed_xor(const char* buffer_a, const char* buffer_b){
     free(xor_result);
     free(raw_bytes1);
     free(raw_bytes2);
+}
+
+int score_text(const char* text, size_t length){
+    /*
+    iterates through text and scores it based on two factors
+    1. characters from the english alphabet add 1 to the score
+    2. characters that are a part of the most common english characters add 2 to the score
+    Then returns the score
+    */
+    int score = 0;
+    const char* common_letters = "etaoin shrdlu";
+    for (size_t i = 0; i < length; i++){
+        if (isalpha(text[i]) || isspace(text[i])){
+            score++;
+        }
+        if (strchr(common_letters, tolower(text[i]))){
+            score+=2;
+        }
+    }
+    return score;
+}
+
+void single_byte_xor(const char* hex_string){
+    uint8_t* raw_bytes = NULL;
+    int highscore = 0;
+    char best_key = 0;
+
+    // Step 1: Decode hex to bytes
+    size_t bytes_length = hex_decode(hex_string, &raw_bytes);
+    char* best_plaintext = (char*) malloc(bytes_length + 1);
+    if (best_plaintext == NULL) {
+        printf("Error performing memory allocation for 'best_plaintext'\n");
+        free(raw_bytes);
+        return;
+    }
+    // Step 2: iterate through all possible 256 (0 - 255) one byte key possiblities and XOR
+    for(int key = 0; key < 256; key++){
+        char* decrypted = (char*) malloc(bytes_length + 1);
+        if(decrypted == NULL){
+            printf("Error performing memory allocation for 'decrypted'\n");
+            return;
+        }
+        for (int i = 0; i < bytes_length; i++) {
+            decrypted[i] = raw_bytes[i] ^ key;
+        }
+        decrypted[bytes_length] = '\0';
+
+        // Step 3: score each output, save the highest score output
+        int score = score_text(decrypted, bytes_length);
+        if (score > highscore){
+            highscore = score;
+            best_key = key;
+            strcpy(best_plaintext, decrypted);
+        }
+        free(decrypted);
+    }
+    // Final: the highest scored output should be the correct text (hopefully) so print
+    // also print the key that was used to decode, if it is a printable ascii character
+    // if it's not printable i.e. 0x09 -> TAB is not a printable character so print a '?' instead
+    printf("Key: %c (0x%02X)\n", isprint(best_key) ? best_key : '?', best_key);
+    printf("Decrypted message: %s\n", best_plaintext);
+    free(raw_bytes);
 }
