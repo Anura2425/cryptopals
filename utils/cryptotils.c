@@ -279,7 +279,7 @@ char single_byte_xor(const char* hex_string){
 }
 
 char detect_char_xor(const char* filename){
-    const int max_lines = 100;
+    const int max_lines = 400;
     char line[max_lines];
     int line_num = 0;
     // open file
@@ -293,9 +293,11 @@ char detect_char_xor(const char* filename){
     char key;
     // read each line, stop if at the end of the file, error, or if the key has been found
     while (fgets(line, max_lines, file) != NULL){ //not sure if null here works actually
+        line_num+= 1;
         key = single_byte_xor(line);// run single_byte_xor function on each line. If best key != 0 then return and print said char.
         if (key != 0){
-            fclose(file); 
+            fclose(file);
+            printf("\nThe encrypted string '%s is on line', %d\n",line ,line_num);
             return key;
         }
     }
