@@ -22,6 +22,9 @@ char* xor_binary(const uint8_t* buffer_a, const uint8_t* buffer_b, size_t input_
 void fixed_xor(const char* buffer_a, const char* buffer_b);
 
 // Single-bite xor cipher
-void single_byte_xor(const char* hex_string);
+char single_byte_xor(const char* hex_string);
+
+// Detect Single Character XOR
+char detect_char_xor(const char* filename);
 
 #endif

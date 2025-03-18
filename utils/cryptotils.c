@@ -235,7 +235,7 @@ int score_text(const char* text, size_t length){
     return score;
 }
 
-void single_byte_xor(const char* hex_string){
+char single_byte_xor(const char* hex_string){
     uint8_t* raw_bytes = NULL;
     int highscore = 0;
     char best_key = 0;
@@ -246,14 +246,14 @@ void single_byte_xor(const char* hex_string){
     if (best_plaintext == NULL) {
         printf("Error performing memory allocation for 'best_plaintext'\n");
         free(raw_bytes);
-        return;
+        return 0;
     }
     // Step 2: iterate through all possible 256 (0 - 255) one byte key possiblities and XOR
     for(int key = 0; key < 256; key++){
         char* decrypted = (char*) malloc(bytes_length + 1);
         if(decrypted == NULL){
             printf("Error performing memory allocation for 'decrypted'\n");
-            return;
+            return 0;
         }
         for (int i = 0; i < bytes_length; i++) {
             decrypted[i] = raw_bytes[i] ^ key;
@@ -275,4 +275,31 @@ void single_byte_xor(const char* hex_string){
     printf("Key: %c (0x%02X)\n", isprint(best_key) ? best_key : '?', best_key);
     printf("Decrypted message: %s\n", best_plaintext);
     free(raw_bytes);
+    return best_key;
+}
+
+char detect_char_xor(const char* filename){
+    const int max_lines = 100;
+    char line[max_lines];
+    int line_num = 0;
+    // open file
+    FILE *file;
+    file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    char key;
+    // read each line, stop if at the end of the file, error, or if the key has been found
+    while (fgets(line, max_lines, file) != NULL){ //not sure if null here works actually
+        key = single_byte_xor(line);// run single_byte_xor function on each line. If best key != 0 then return and print said char.
+        if (key != 0){
+            fclose(file); 
+            return key;
+        }
+    }
+    printf("Failed to find key.");
+    fclose(file);
+    return 0;
 }

@@ -1,10 +1,7 @@
 #include <stdio.h>  
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
 #include "../utils/cryptotils.h"
 
-int main(){
+int main(int argc, char *argv[]){
     // main challenge test
     
     char* hex_string = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
@@ -19,4 +16,8 @@ int main(){
     // no key test, (non printable character key)
     char* hex_string3 = "546869732069732061207465737420776974686F75742061206B6579";
     single_byte_xor(hex_string3);
+
+    // next challenge check
+    // char* hex_string4 = "32042f46431d2c44607934ed180c1028136a5f2b26092e3b2c4e2930585a";
+    // single_byte_xor(hex_string4);
 }
