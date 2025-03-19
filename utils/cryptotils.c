@@ -3,11 +3,13 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include "cryptotils.h"
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static const char hex_table[] = "0123456789abcdef";
 
+// GENERAL Functions
 int hex_to_int(char c) {
     /*
     Convert a hex character to its corresponding value
@@ -65,7 +67,7 @@ size_t hex_decode(const char *hex_str, uint8_t **output) {
     }
     
     // Process remaining characters in pairs i.e. 72 6f 6d 
-    for (i; i < len; i += 2, j++) {
+    for (; i < len; i += 2, j++) {
         // higher hex value and lower hex char
         int high = hex_to_int(hex_str[i]);
         int low = hex_to_int(hex_str[i + 1]);
@@ -127,6 +129,8 @@ char *base64_encode(const uint8_t *data, size_t input_length) {
     return encoded_data;
 }
 
+// CHALLENGE functions
+// HextoB64
 void hex_to_base64(const char *hex_string) {
     uint8_t *raw_bytes = NULL;
     
@@ -167,6 +171,7 @@ void hex_to_base64(const char *hex_string) {
     free(base64_result);
 }
 
+// FixedXOR
 void fixed_xor(const char* buffer_a, const char* buffer_b){
     /*
     Takes two hex strings, decodes them, xors the two buffers, 
@@ -215,6 +220,7 @@ void fixed_xor(const char* buffer_a, const char* buffer_b){
     free(raw_bytes2);
 }
 
+// SingleByteXORCipher
 int score_text(const char* text, size_t length){
     /*
     iterates through text and scores it based on two factors
@@ -235,73 +241,138 @@ int score_text(const char* text, size_t length){
     return score;
 }
 
-char single_byte_xor(const char* hex_string){
+struct scoring_data single_byte_xor(const char* hex_string) {
+    struct scoring_data result = {NULL, 0, 0};
     uint8_t* raw_bytes = NULL;
-    int highscore = 0;
-    char best_key = 0;
-
-    // Step 1: Decode hex to bytes
     size_t bytes_length = hex_decode(hex_string, &raw_bytes);
-    char* best_plaintext = (char*) malloc(bytes_length + 1);
-    if (best_plaintext == NULL) {
-        printf("Error performing memory allocation for 'best_plaintext'\n");
+    
+    if (bytes_length == 0 || raw_bytes == NULL) {
+        printf("Error: Failed to decode hex string\n");
+        return result;
+    }
+    
+    int best_score = 0;
+    int best_key = 0;
+    char* temp_buffer = (char*)malloc(bytes_length + 1);
+    
+    if (temp_buffer == NULL) {
+        printf("Error: Memory allocation failed\n");
         free(raw_bytes);
-        return 0;
+        return result;
     }
-    // Step 2: iterate through all possible 256 (0 - 255) one byte key possiblities and XOR
-    for(int key = 0; key < 256; key++){
-        char* decrypted = (char*) malloc(bytes_length + 1);
-        if(decrypted == NULL){
-            printf("Error performing memory allocation for 'decrypted'\n");
-            return 0;
-        }
+    
+    // iterate through all possible 256 (0 - 255) one byte key possiblities and XOR
+    for (int key = 0; key < 256; key++) {
+        // Apply XOR with current key
         for (int i = 0; i < bytes_length; i++) {
-            decrypted[i] = raw_bytes[i] ^ key;
+            temp_buffer[i] = raw_bytes[i] ^ key;
         }
-        decrypted[bytes_length] = '\0';
-
-        // Step 3: score each output, save the highest score output
-        int score = score_text(decrypted, bytes_length);
-        if (score > highscore){
-            highscore = score;
+        temp_buffer[bytes_length] = '\0';
+        
+        //score each output, save the highest score output and key
+        int current_score = score_text(temp_buffer, bytes_length);
+        if (current_score > best_score) {
+            best_score = current_score;
             best_key = key;
-            strcpy(best_plaintext, decrypted);
         }
-        free(decrypted);
     }
-    // Final: the highest scored output should be the correct text (hopefully) so print
-    // also print the key that was used to decode, if it is a printable ascii character
-    // if it's not printable i.e. 0x09 -> TAB is not a printable character so print a '?' instead
-    printf("Key: %c (0x%02X)\n", isprint(best_key) ? best_key : '?', best_key);
-    printf("Decrypted message: %s\n", best_plaintext);
+    
+    // Now that we know the best key, generate the final result
+    char* decrypted = (char*)malloc(bytes_length + 1);
+    if (decrypted == NULL) {
+        printf("Error: Memory allocation failed\n");
+        free(raw_bytes);
+        free(temp_buffer);
+        return result;
+    }
+    
+    for (int i = 0; i < bytes_length; i++) {
+        decrypted[i] = raw_bytes[i] ^ best_key;
+    }
+    decrypted[bytes_length] = '\0';
+    
+    // save values to result struct
+    result.decrypted = decrypted;
+    result.score = best_score;
+    result.key = (char)best_key;
+    
     free(raw_bytes);
-    return best_key;
+    free(temp_buffer);
+    return result;
 }
 
-char detect_char_xor(const char* filename){
+// DetectSingleCharXOR
+void detect_char_xor(const char* filename) {
+    struct scoring_data buffer_data;
     const int max_lines = 400;
     char line[max_lines];
     int line_num = 0;
+    int best_score = 0;
+    int best_line = 0;
+    char best_key = 0;
+    char* best_string = NULL;
+    char* best_original_line = NULL;
+
     // open file
     FILE *file;
     file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
-        return 1;
+        return;
     }
 
-    char key;
-    // read each line, stop if at the end of the file, error, or if the key has been found
-    while (fgets(line, max_lines, file) != NULL){ //not sure if null here works actually
-        line_num+= 1;
-        key = single_byte_xor(line);// run single_byte_xor function on each line. If best key != 0 then return and print said char.
-        if (key != 0){
-            fclose(file);
-            printf("\nThe encrypted string '%s is on line', %d\n",line ,line_num);
-            return key;
+    // read each line
+    while (fgets(line, max_lines, file) != NULL) { 
+        line_num += 1;
+        
+        // Remove newline character if present (because fgets, reads with the newline char)
+        size_t line_len = strlen(line);
+        if (line_len > 0 && line[line_len-1] == '\n') {
+            line[line_len-1] = '\0';
+            line_len--;
+        }
+        
+        buffer_data = single_byte_xor(line);
+        
+        // If this score is better than our previous best
+        if (buffer_data.score > best_score) {
+            // Free previous best string if it exists
+            if (best_string != NULL) {
+                free(best_string);
+            }
+            
+            // Free previous best original line if it exists
+            if (best_original_line != NULL) {
+                free(best_original_line);
+            }
+            
+            // Save current best data
+            best_string = buffer_data.decrypted;
+            best_score = buffer_data.score;
+            best_key = buffer_data.key;
+            best_line = line_num;
+            
+            // Save a copy of the original line for printing later
+            best_original_line = strdup(line);
+        } else {
+            // If we didn't keep this result, free its memory
+            free(buffer_data.decrypted);
         }
     }
-    printf("Failed to find key.");
+
+    // Output results
+    printf("The line of the encrypted string is: %d\n", best_line);
+    printf("String before decryption: %s\n", best_original_line);
+    printf("Key: %c (0x%02X)\n", isprint(best_key) ? best_key : '?', best_key);
+    printf("Score: %d\n", best_score);
+    printf("Decrypted message: %s\n", best_string);
+
+    // Clean up
+    if (best_string != NULL) {
+        free(best_string);
+    }
+    if (best_original_line != NULL) {
+        free(best_original_line);
+    }
     fclose(file);
-    return 0;
 }

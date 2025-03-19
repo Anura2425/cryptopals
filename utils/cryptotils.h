@@ -5,7 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "cryptotils.c"
+
+// STRUCTS
+struct scoring_data{
+    char* decrypted;
+    int score;
+    char key;
+};
 
 // General
 int hex_to_int(char c);
@@ -22,9 +28,9 @@ char* xor_binary(const uint8_t* buffer_a, const uint8_t* buffer_b, size_t input_
 void fixed_xor(const char* buffer_a, const char* buffer_b);
 
 // Single-bite xor cipher
-char single_byte_xor(const char* hex_string);
+struct scoring_data single_byte_xor(const char* hex_string);
 
 // Detect Single Character XOR
-char detect_char_xor(const char* filename);
+void detect_char_xor(const char* filename);
 
 #endif

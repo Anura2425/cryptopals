@@ -1,23 +1,13 @@
 #include <stdio.h>  
+#include <ctype.h>
 #include "../utils/cryptotils.h"
 
 int main(int argc, char *argv[]){
     // main challenge test
-    
+    struct scoring_data hex_data1;
     char* hex_string = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-    single_byte_xor(hex_string);
-
-    // extra tests
-
-    // Long text, tested with other ascii chars like periods
-    char* hex_string2 = "14292A2A2F2861662F28662B3F6673687666312F322E662B3F663427213229366622293128663529662B3F662E272F346625272866242A293168";
-    single_byte_xor(hex_string2);
-
-    // no key test, (non printable character key)
-    char* hex_string3 = "546869732069732061207465737420776974686F75742061206B6579";
-    single_byte_xor(hex_string3);
-
-    // next challenge check
-    // char* hex_string4 = "32042f46431d2c44607934ed180c1028136a5f2b26092e3b2c4e2930585a";
-    // single_byte_xor(hex_string4);
+    hex_data1 = single_byte_xor(hex_string);
+    printf("Key: %c (0x%02X)\n", isprint(hex_data1.key) ? hex_data1.key : '?', hex_data1.key);
+    printf("Score: %d\n", hex_data1.score);
+    printf("Decrypted message: %s\n", hex_data1.decrypted);
 }
