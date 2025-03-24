@@ -7,18 +7,7 @@ int main(int argc, char *argv[]){
     
     struct string_size result = repeating_key_xor(plaintext, key);
     
-    size_t hex_len = result.size * 2 + 1;
-    char *hex_output = (char *)malloc(hex_len);
-    
-    if (hex_output == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        free(result.string);
-        return 1;
-    }
-    
-    // Convert to hex string
-    hex_encode(result.string, result.size, hex_output);
-    printf("Output  : %s\n", hex_output);
+    printf("Output  : %s\n", result.string);
 
     // free the dynamically allocated memory
     free(result.string);

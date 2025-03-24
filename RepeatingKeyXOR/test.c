@@ -13,10 +13,6 @@ int main(int argc, char *argv[]) {
     
     // Compute XOR result (raw bytes) and allocate enough space for output
     struct string_size result = repeating_key_xor(input, key);
-    size_t hex_len = result.size * 2 + 1;
-    char *hex_output = (char *)malloc(hex_len);
-    
-    hex_encode(result.string, result.size, hex_output);
     
     // Debugging: Print hex output for verification
     // printf("Expected: %s\n", expected_output);
@@ -24,13 +20,12 @@ int main(int argc, char *argv[]) {
     
 
     // 2) Test
-    assert(strcmp(hex_output, expected_output) == 0);
+    assert(strcmp(result.string, expected_output) == 0);
     
     printf("Test Passed!\n");
     
     // 3) Cleanup
     free(result.string);
-    free(hex_output);
     
     return 0;
 }

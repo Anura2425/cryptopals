@@ -9,7 +9,7 @@ Given a string of English-Plaintext, encrypt it using a repeating-key XOR cipher
 
 ### Assumptions:
 
-* Outputs the raw bytes, assumes use of another function 'hex_encode' to handle the encoding to hexadecimal after performing the XOR to print nicely (could also use a formatted print string with the %02x specifier within a for loop if you prefer not to actually convert to a new string of hexadecimal)
+* Use of another function 'hex_encode' to handle the encoding to hexadecimal after performing the XOR
 * Assumes the input will be a correct string of English-Plaintext (readable ascii characters)
 
 ### Inputs:
@@ -20,7 +20,7 @@ Given a string of English-Plaintext, encrypt it using a repeating-key XOR cipher
 ### Outputs:
 
 1. A struct (string_size) holding both:
-   * char*: a string of encrypted text
+   * char*: a string of encrypted text (in hexadecimal)
    * size_t: the size of the output string calculated based off of the size of the input string
 
 ### State Changes:

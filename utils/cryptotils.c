@@ -416,8 +416,19 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
     output_data.string = output_str;
     output_data.size = length;
 
+    size_t hex_len = output_data.size * 2 + 1;
+    char *hex_output = (char *)malloc(hex_len);
     
+    if (hex_output == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        free(output_data.string);
+        exit(1);
+    }
+    
+    // Convert to hex string
+    hex_encode(output_data.string, output_data.size, hex_output);
 
+    output_data.string = hex_output;
     return output_data; // The caller is responsible for freeing output_data.string
 }
 
