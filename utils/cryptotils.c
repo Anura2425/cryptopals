@@ -83,6 +83,18 @@ size_t hex_decode(const char *hex_str, uint8_t **output) {
     return byte_len;
 }
 
+void hex_encode(const char* input, size_t input_len, char* output) {
+    static const char hex[] = "0123456789abcdef";
+    
+    for (size_t i = 0; i < input_len; i++) {
+        unsigned char byte = (unsigned char)input[i];
+        output[i*2]     = hex[byte >> 4];
+        output[i*2 + 1] = hex[byte & 0x0F];
+    }
+    
+    output[input_len * 2] = '\0';  // Null-terminate the string
+}
+
 char* xor_binary(const uint8_t* buffer_a, const uint8_t* buffer_b, size_t input_length) {
     uint8_t* result_buffer = (uint8_t*)malloc(input_length);
     if (result_buffer == NULL) {
@@ -327,9 +339,9 @@ void detect_char_xor(const char* filename) {
         
         // Remove newline character if present (because fgets, reads with the newline char)
         size_t line_len = strlen(line);
-        if (line_len > 0 && line[line_len-1] == '\n') {
+        if (line_len > 0 && line[line_len-1] == '\n') { //null terminator is at line[line_len], therefore newline is at line[line_len-1]
             line[line_len-1] = '\0';
-            line_len--;
+            line_len--; // account for the removal of 1 character by lowering the length by 1 character aswell
         }
         
         buffer_data = single_byte_xor(line);
@@ -376,3 +388,36 @@ void detect_char_xor(const char* filename) {
     }
     fclose(file);
 }
+
+// RepeatingKeyXOR
+struct string_size repeating_key_xor(const char* plaintext, const char* key) {
+    // Calculate lengths of input strings
+    size_t key_length = strlen(key);
+    size_t length = strlen(plaintext);
+
+    // Allocate memory for output string (+1 for null-termination)
+    char* output_str = (char*)malloc((length + 1) * sizeof(char));
+    if (output_str == NULL) {
+        fprintf(stderr, "RepeatingKeyXOR ERROR: Memory allocation failed\n");
+        exit(1);
+    }
+
+    // Apply XOR operation with repeating key
+    for (size_t i = 0; i < length; i++) {
+        // XOR the current plaintext char with the corresponding key char
+        output_str[i] = plaintext[i] ^ key[i % key_length];
+    }
+
+    // Null-terminate the string
+    output_str[length] = '\0';
+
+    // Create and return the struct
+    struct string_size output_data;
+    output_data.string = output_str;
+    output_data.size = length;
+
+    
+
+    return output_data; // The caller is responsible for freeing output_data.string
+}
+
