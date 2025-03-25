@@ -411,8 +411,8 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
     // Null-terminate the string
     output_str[length] = '\0';
 
-    // Create and return the struct
-    struct string_size output_data;
+    // Create struct and declare the member variables
+    struct string_size output_data = {NULL, 0};
     output_data.string = output_str;
     output_data.size = length;
 
@@ -421,7 +421,7 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
     
     if (hex_output == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
-        free(output_data.string);
+        free(hex_output);
         exit(1);
     }
     
@@ -429,6 +429,7 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
     hex_encode(output_data.string, output_data.size, hex_output);
 
     output_data.string = hex_output;
+    free(output_str);
     return output_data; // The caller is responsible for freeing output_data.string
 }
 
