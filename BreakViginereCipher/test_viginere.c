@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <stdbool.h>
 #include "../utils/cryptotils.h"
 
 int test_plaintext_to_binary(){
@@ -28,8 +29,32 @@ int test_plaintext_to_binary(){
     return 1;
 }
 
+int test_compute_hamming_distance(){
+    // Setup
+    char* text_buffer1 = "this is a test";
+    char* text_buffer2 = "wokka wokka!!!";
+    char* binary_buffer1 = "0111010001101000011010010111001100100000011010010111001100100000011000010010000001110100011001010111001101110100";
+    char* binary_buffer2 = "0111011101101111011010110110101101100001001000000111011101101111011010110110101101100001001000010010000100100001";
+
+    // Execution
+    int text_hamming_distance = compute_hamming_distance(text_buffer1, text_buffer2);
+    int binary_hamming_distance = compute_hamming_distance(binary_buffer1, binary_buffer2);
+
+    // Debug
+    // printf("text hamming distance: %d \n", text_hamming_distance);
+
+    // Validation
+    assert(text_hamming_distance == 37);
+    assert(binary_hamming_distance == 37);
+
+    // Cleanup
+    return 1;
+}
+
 int main(int argc, char** argv){
     
-    printf("Plaintext to binary: %s ", test_plaintext_to_binary() ? ("Passed! :D") : ("Failed. :("));
+    printf("Plaintext to binary: %s \n", test_plaintext_to_binary() ? ("Passed! :D") : ("Failed. :("));
+    printf("Compute hamming distance: %s \n", test_compute_hamming_distance() ? ("Passed! :D") : ("Failed. :("));
+
     return 0;
 }

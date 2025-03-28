@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include "cryptotils.h"
 
@@ -119,6 +120,25 @@ char* plaintext_to_binary(const char* input){
     }
 
     return binary_string;
+}
+
+// Check if the input is a pure binary string
+bool is_binary_string(const char* input) {
+    // Empty string is not considered binary
+    if (input == NULL || input[0] == '\0') {
+        return false;
+    }
+
+    // Iterate through each character
+    for (size_t i = 0; input[i] != '\0'; i++) {
+        // If any character is not exactly '0' or '1', return false
+        if (input[i] != '0' && input[i] != '1') {
+            return false;
+        }
+    }
+
+    // If the loop made it through the entire string, it's a binary string
+    return true;
 }
 
 char* xor_binary(const uint8_t* buffer_a, const uint8_t* buffer_b, size_t input_length) {
@@ -461,4 +481,41 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
 
 // Break Viginere Cipher
 
+int compute_hamming_distance(const char* buffer1, const char* buffer2){
+    char* binary1 = NULL;
+    char* binary2 = NULL;
+
+    // Convert to binary if needed
+    if(!is_binary_string(buffer1)){
+        binary1 = plaintext_to_binary(buffer1);
+        buffer1 = binary1;
+    }
+
+    if(!is_binary_string(buffer2)){
+        binary2 = plaintext_to_binary(buffer2);
+        buffer2 = binary2;
+    }
+
+    // Check if binary strings have equal length
+    size_t len1 = strlen(buffer1);
+    size_t len2 = strlen(buffer2);
+    
+    if (len1 != len2) {
+        // Free allocated memory if any
+        free(binary1);
+        free(binary2);
+        return -1;
+    }
+
+    int hamming_distance = 0;
+    for(size_t i = 0; i < len1; i++){
+        if(buffer1[i] != buffer2[i]){
+            hamming_distance++;
+        }
+    }
+
+    free(binary1);
+    free(binary2);
+    return hamming_distance;
+}
 
