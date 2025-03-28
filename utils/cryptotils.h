@@ -24,6 +24,8 @@ int hex_to_int(char c);
 char int_to_hex(int n);
 int score_text(const char* text, size_t length);
 void hex_encode(const char* input, size_t input_len, char* output);
+char* plaintext_to_binary(const char* input);
+
 
 // Hex to Base64 (ENCRYPT)
 size_t hex_decode(const char* hex_str, uint8_t** out);
@@ -42,5 +44,8 @@ void detect_char_xor(const char* filename);
 
 // Implement repeating-key XOR (ENCRYPT)
 struct string_size repeating_key_xor(const char* plaintext, const char* key);
+
+// Break Viginere Cipher
+int compute_hamming_distance(const char* binary1, const char* binary2);
 
 #endif

@@ -95,6 +95,32 @@ void hex_encode(const char* input, size_t input_len, char* output) {
     output[input_len * 2] = '\0';  // Null-terminate the string
 }
 
+char* plaintext_to_binary(const char* input){
+    int input_len = strlen(input);
+    int binary_len = input_len * 8 + 1; // +1 for extra null terminator character
+    char* binary_string = (char*) calloc(binary_len, sizeof(char));
+    if(binary_string == NULL){
+        // handle mem allocation failure
+        perror("Error: Memory allocation failed");
+        exit(1);
+    }
+
+    binary_string[0] = '\0';
+
+    for(int i = 0; input[i] != '\0'; i++){
+        unsigned char c = input[i]; // current character
+        char temp[9]; // temp char string for one byte + null terminator
+        for(int j = 7; j >= 0; j--){
+            temp[7-j] = ((c >> j) & 1) + '0'; 
+        }
+        temp[8] = '\0'; // null terminate
+
+        strcat(binary_string, temp);
+    }
+
+    return binary_string;
+}
+
 char* xor_binary(const uint8_t* buffer_a, const uint8_t* buffer_b, size_t input_length) {
     uint8_t* result_buffer = (uint8_t*)malloc(input_length);
     if (result_buffer == NULL) {
@@ -432,4 +458,7 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
     free(output_str);
     return output_data; // The caller is responsible for freeing output_data.string
 }
+
+// Break Viginere Cipher
+
 
