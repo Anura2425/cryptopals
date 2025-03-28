@@ -1,6 +1,8 @@
 <h1 style="text-align:center;">Function Specifications</h3>
 
-<h2 style="text-align:center;">plaintext_to_binary()</h3>
+<h3 style="text-align:center;">plaintext_to_binary()</h3>
+
+---
 
 <!-- Not sure if this in necessary or not, may just be able to directly use bitwise ops on ascii characters -->
 
@@ -27,8 +29,12 @@
 ### Cases and Expected Behavior
 
     Take the input string as input, allocate memory for 8x the size of the initial string (8 bits per character), iterate through the characters, running bitwise & and a shifting the bits right as we go to convert each character to its bitewise representation. Then concatenate the current characters binary to the main binary string.
+
 ---
-<h2 style="text-align:center;">compute_hamming_distance()</h3>
+
+<h3 style="text-align:center;">compute_hamming_distance()</h3>
+
+---
 
 ### Purpose
 
@@ -56,7 +62,10 @@
     If the input is in plaintext, it will be converted to a string of binary first, then each bit of each string will be checked using the != operator to see if they are not the same value (1 vs 0 for example), if they are not the same then the count variable will be increased by 1. Continue until the end of the strings. Else if the input is in binary already, skip the conversion to binary step, and then the rest of the process is the same.
 
 ---
-<h2 style="text-align:center;">read_file()</h3>
+
+<h3 style="text-align:center;">read_file()</h3>
+
+---
 
 ### Purpose
 
@@ -69,8 +78,12 @@
 ### State Changes
 
 ### Cases/Expected Behaviors
+
 ---
-<h2 style="text-align:center;">b64_decode()</h3>
+
+<h3 style="text-align:center;">b64_decode()</h3>
+
+---
 
 ### Purpose
 
@@ -83,8 +96,12 @@
 ### State Changes
 
 ### Cases/Expected Behaviors
+
 ---
-<h2 style="text-align:center;">break_viginere_cipher()</h3>
+
+<h3 style="text-align:center;">break_viginere_cipher()</h3>
+
+---
 
 ### Purpose
 
