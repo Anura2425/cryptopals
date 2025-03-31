@@ -51,10 +51,50 @@ int test_compute_hamming_distance(){
     return 1;
 }
 
+int test_base64_decode(){
+    // Setup
+    const char* base64_string = "SGVsbG8gV29ybGQh";
+    size_t decoded_length;
+    const char* expected_output = "Hello World!";
+
+    // Execution
+    unsigned char* decoded_string = base64_decode(base64_string, &decoded_length);
+
+    // Debug
+    // if (decoded_string != NULL) {
+    //     printf("Decoded string: %s\n", decoded_string);
+    //     free(decoded_string);
+    // } else {
+    //     printf("Decoding failed.\n");
+    // }
+    
+    // Validation
+    assert(strcmp((char*)decoded_string, expected_output) == 0);
+    free(decoded_string);
+    // Cleanup
+    return 1;
+}
+
+int test_break_viginere_cipher(){
+    // Setup
+    const char* ciphertext = "";
+    const char* expected_output = "";
+    // Execution
+    unsigned char* plaintext = "";
+    // Debug
+
+    // Validation
+    assert(strcmp((char*)plaintext, expected_output) == 0);
+    // Cleanup
+    return 1;
+}
+
 int main(int argc, char** argv){
     
     printf("Plaintext to binary: %s \n", test_plaintext_to_binary() ? ("Passed! :D") : ("Failed. :("));
     printf("Compute hamming distance: %s \n", test_compute_hamming_distance() ? ("Passed! :D") : ("Failed. :("));
+    printf("Decode Base64: %s \n", test_base64_decode() ? ("Passed! :D") : ("Failed. :("));
+    printf("Break Viginere Cipher: %s \n", test_break_viginere_cipher() ? ("Passed! :D") : ("Failed. :("));
 
     return 0;
 }

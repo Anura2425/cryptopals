@@ -8,7 +8,20 @@
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+// Hex table
 static const char hex_table[] = "0123456789abcdef";
+// Base64 decoding table
+static const char base64_decode_table[] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+    -1, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+    -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
+};
+
 
 // GENERAL Functions
 int hex_to_int(char c) {
@@ -27,6 +40,64 @@ char int_to_hex(int n){
     */
     return hex_table[n];
 }
+
+unsigned char* base64_decode(const char* input, size_t* output_length) {
+    /*
+    Decodes a string of base64 (to plaintext)
+    */
+    size_t input_length = strlen(input);
+    if (input_length % 4 != 0) {
+        return NULL; // Invalid base64 length
+    }
+
+    size_t output_size = (input_length / 4) * 3;
+    if (input[input_length - 1] == '=') {
+        output_size--;
+        if (input[input_length - 2] == '=') {
+            output_size--;
+        }
+    }
+
+    unsigned char* output = (unsigned char*)malloc(output_size + 1); // +1 for null terminator
+    if (output == NULL) {
+        return NULL;
+    }
+
+    size_t output_index = 0;
+    for (size_t i = 0; i < input_length; i += 4) {
+        int a = base64_decode_table[(unsigned char)input[i]];
+        int b = base64_decode_table[(unsigned char)input[i + 1]];
+        int c = base64_decode_table[(unsigned char)input[i + 2]];
+        int d = base64_decode_table[(unsigned char)input[i + 3]];
+
+        output[output_index++] = (a << 2) | ((b & 0x30) >> 4);
+
+        if (input[i + 2] != '=') {
+            if (c == -1) {
+                free(output);
+                return NULL;
+            }
+            output[output_index++] = ((b & 0x0f) << 4) | ((c & 0x3c) >> 2);
+        }
+
+        if (input[i + 3] != '=') {
+            if (d == -1) {
+                free(output);
+                return NULL;
+            }
+            output[output_index++] = ((c & 0x03) << 6) | d;
+        }
+    }
+
+    output[output_index] = '\0'; // Null-terminate the output
+
+    if (output_length != NULL) {
+        *output_length = output_index;
+    }
+    
+    return output;
+}
+
 
 size_t hex_decode(const char *hex_str, uint8_t **output) {
     /*
@@ -479,9 +550,13 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
     return output_data; // The caller is responsible for freeing output_data.string
 }
 
-// Break Viginere Cipher
+// Break Viginere (Repeating_Key_XOR) Cipher:
 
 int compute_hamming_distance(const char* buffer1, const char* buffer2){
+    /*
+    Function to compute the hamming distance (amount of differing bits) between two buffers
+    */
+
     char* binary1 = NULL;
     char* binary2 = NULL;
 
@@ -519,3 +594,124 @@ int compute_hamming_distance(const char* buffer1, const char* buffer2){
     return hamming_distance;
 }
 
+DataAndKey break_viginere_cipher(const char* ciphertext, size_t size){
+    DataAndKey output_data = {NULL, NULL, 0};
+    
+
+}
+
+
+
+
+// HASH MAP: 
+
+unsigned int hash(const char* key, int capacity) {
+    /*
+    A basic hash function
+    */ 
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *key++)) {
+        hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    }
+
+    return hash % capacity;
+}
+
+// Function to create a new hashmap
+HashMap* createHashMap(int capacity) {
+    HashMap* map = (HashMap*)malloc(sizeof(HashMap));
+    if (map == NULL) {
+        // Error handling for failed mem allocation
+        return NULL; 
+    }
+
+    map->capacity = capacity;
+    map->size = 0;
+    map->items = (KeyValuePair**)calloc(capacity, sizeof(KeyValuePair*));
+    // Error handling for failed mem allocation
+    if (map->items == NULL) {
+        free(map);
+        return NULL; 
+    }
+
+    return map;
+}
+
+void insert(HashMap* map, const char* key, int value) {
+    /*
+    Function to insert a key-value pair into the hashmap
+    */ 
+    if (map == NULL || key == NULL) {
+        return;
+    }
+
+    unsigned int index = hash(key, map->capacity);
+
+    // Simple linear probing for collision resolution
+    while (map->items[index] != NULL) {
+        if (strcmp(map->items[index]->key, key) == 0) {
+            // Key already exists, update the value
+            map->items[index]->value = value;
+            return;
+        }
+        index = (index + 1) % map->capacity; // Move to the next slot
+    }
+
+    // Create a new key-value pair
+    KeyValuePair* pair = (KeyValuePair*)malloc(sizeof(KeyValuePair));
+    if (pair == NULL) {
+        return; // Allocation failed
+    }
+
+    pair->key = strdup(key); // Duplicate the key string
+    if (pair->key == NULL) {
+        free(pair);
+        return; // Allocation failed
+    }
+    pair->value = value;
+
+    map->items[index] = pair;
+    map->size++;
+}
+
+int* get(HashMap* map, const char* key) {
+    /*
+    Function to retrieve a value from the hashmap
+    */
+    if (map == NULL || key == NULL) {
+        return NULL;
+    }
+
+    unsigned int index = hash(key, map->capacity);
+
+    // Search for the key using linear probing
+    while (map->items[index] != NULL) {
+        if (strcmp(map->items[index]->key, key) == 0) {
+            return &map->items[index]->value; // Return the address of the value
+        }
+        index = (index + 1) % map->capacity;
+    }
+
+    return NULL; // Key not found
+}
+
+void freeHashMap(HashMap* map) {
+    /*
+    Function to free the hashmap's memory
+    */
+    if (map == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < map->capacity; i++) {
+        if (map->items[i] != NULL) {
+            free(map->items[i]->key);
+            free(map->items[i]);
+        }
+    }
+
+    free(map->items);
+    free(map);
+}

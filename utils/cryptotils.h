@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 // STRUCTS
-
 struct string_size{
     char* string;
     size_t size;
@@ -19,14 +19,28 @@ struct scoring_data{
     char key;
 };
 
-// General
+typedef struct {
+    char* data;
+    char* key;
+    int key_size;
+} DataAndKey;
+
+
+
+// GENERAL FUNCTIONS:
+
 int hex_to_int(char c);
 char int_to_hex(int n);
 int score_text(const char* text, size_t length);
 void hex_encode(const char* input, size_t input_len, char* output);
 char* plaintext_to_binary(const char* input);
 bool is_binary_string(const char* input);
+unsigned char* base64_decode(const char* input, size_t* output_length);
+char* read_file(char* filename);
 
+
+
+// CHALLENGE SPECIFIC FUNCTIONS:
 
 // Hex to Base64 (ENCRYPT)
 size_t hex_decode(const char* hex_str, uint8_t** out);
@@ -46,7 +60,29 @@ void detect_char_xor(const char* filename);
 // Implement repeating-key XOR (ENCRYPT)
 struct string_size repeating_key_xor(const char* plaintext, const char* key);
 
-// Break Viginere Cipher
+// Break Viginere Cipher (DECRYPT)
 int compute_hamming_distance(const char* buffer1, const char* buffer2);
+DataAndKey break_viginere_cipher(const char* ciphertext, size_t size);
+
+
+// HASH MAP:
+// structure to hold key-value pairs
+typedef struct {
+    char* key;
+    int value;
+} KeyValuePair;
+
+// hashmap structure
+typedef struct {
+    KeyValuePair** items;
+    int capacity;
+    int size;
+} HashMap;
+
+unsigned int hash(const char* key, int capacity);
+HashMap* createHashMap(int capacity);
+void insert(HashMap* map, const char* key, int value);
+int* get(HashMap* map, const char* key);
+void freeHashMap(HashMap* map);
 
 #endif
