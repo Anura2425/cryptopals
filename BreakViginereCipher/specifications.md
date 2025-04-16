@@ -170,7 +170,7 @@
 
 ### Inputs
 
-    A char* holding a buffer of viginere encrypted data
+    A char* holding a buffer of viginere encrypted data, and the size of the ciphertext (size_t)
 
 ### Outputs
 
