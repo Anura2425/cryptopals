@@ -1,5 +1,4 @@
 <h1 style="text-align:center;">Function Specifications</h1>
----
 
 <h3 style="text-align:center;">compute_hamming_distance()</h3>
 
@@ -147,7 +146,13 @@
 
 ### Cases/Expected Behaviors
 
-    First allocate memory for the different blocks of ciphertext we will be working with. Then break the cipher text into blocks of key_size length (this is because if the key_size we found was indeed used on the original text to create this cipher text, it would have repeating xor'd against the text, making groups 'blocks' in our case that are the length of the key). Now allocate memory for the transposed blocks, and then transpose the blocks (This is because we are going to be rearranging the bytes in away that the bytes that were xor'd against the same character will be grouped together). Then we solve each of these blocks as if they were single XOR ciphered (since the groups should have all been xord against the same character within their respective group at this point), and this will give us the most likely byte for each block in the key. Put these new bytes (characters) in order and you will get the key! If at anypoint memory allocation or one of these proccesses fails, exit the code by returning NULL. If it doesn't fail, youve done it! Return the key and get ready to decipher the text 😼
+    First allocate memory for the different blocks of ciphertext we will be working with.   
+    Then break the cipher text into blocks of key_size length (this is because if the key_size we found was indeed used on the original text to create this cipher text, it would have repeating xor'd against the text, making groups 'blocks' in our case that  are the length of the key).
+    Now allocate memory for the transposed blocks, and then transpose the blocks (This is  because we are going to be rearranging the bytes in away that the bytes that were xor'd against the same character will be grouped together).  
+    Then we solve each of these blocks as if they were single XOR ciphered (since the groups should have all been xord against the same character within their respective group at this point), and this will give us the most likely byte for each block in the key.  
+    Put these new bytes (characters) in order and you will get the key!  
+    If at anypoint memory allocation or one of these proccesses fails, exit the code by returning  NULL.  
+    If it doesn't fail, youve done it! Return the key and get ready to decipher the text 😼!
 
 ---
 
