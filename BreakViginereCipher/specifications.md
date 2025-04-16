@@ -178,7 +178,7 @@
     
 ### State Changes
 
-    The internal hashmap will be constantly adding values for key_sizes and normalized edit distances, the hashmap will also be resorting to keep the structure of smallest to greatest normalized edit distance
+    None
 
 ### Cases/Expected Behaviors
  
