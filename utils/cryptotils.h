@@ -33,10 +33,10 @@ int hex_to_int(char c);
 char int_to_hex(int n);
 int score_text(const char* text, size_t length);
 void hex_encode(const char* input, size_t input_len, char* output);
-char* plaintext_to_binary(const char* input);
 bool is_binary_string(const char* input);
 unsigned char* base64_decode(const char* input, size_t* output_length);
 char* read_file(char* filename);
+void strip_newlines(char* str);
 
 
 
@@ -57,32 +57,13 @@ struct scoring_data single_byte_xor(const char* hex_string);
 // Detect Single Character XOR (FIND and DECRYPT)
 void detect_char_xor(const char* filename);
 
-// Implement repeating-key XOR (ENCRYPT)
-struct string_size repeating_key_xor(const char* plaintext, const char* key);
+// Implement repeating-key XOR (ENCRYPT/decrypt)
+struct string_size repeating_key_xor(const char* plaintext, const char* key, bool to_hex);
 
 // Break Viginere Cipher (DECRYPT)
-int compute_hamming_distance(const char* buffer1, const char* buffer2);
-DataAndKey break_viginere_cipher(const char* ciphertext, size_t size);
-
-
-// HASH MAP:
-// structure to hold key-value pairs
-typedef struct {
-    char* key;
-    int value;
-} KeyValuePair;
-
-// hashmap structure
-typedef struct {
-    KeyValuePair** items;
-    int capacity;
-    int size;
-} HashMap;
-
-unsigned int hash(const char* key, int capacity);
-HashMap* createHashMap(int capacity);
-void insert(HashMap* map, const char* key, int value);
-int* get(HashMap* map, const char* key);
-void freeHashMap(HashMap* map);
+int compute_hamming_distance(const uint8_t* buffer1, const uint8_t* buffer2, size_t length);
+int find_key_size(const uint8_t* ciphertext, size_t length);
+char* find_key(int key_size, const uint8_t* ciphertext, size_t ciphertext_len);
+DataAndKey break_viginere_cipher(uint8_t* ciphertext, size_t size);
 
 #endif

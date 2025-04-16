@@ -10,7 +10,7 @@
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 // Hex table
 static const char hex_table[] = "0123456789abcdef";
-// Base64 decoding table
+// Base64 decoding table (magic numbers!)
 static const char base64_decode_table[] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -23,7 +23,8 @@ static const char base64_decode_table[] = {
 };
 
 
-// GENERAL Functions
+// GENERAL FUNCTIONS:
+
 int hex_to_int(char c) {
     /*
     Convert a hex character to its corresponding value
@@ -167,32 +168,6 @@ void hex_encode(const char* input, size_t input_len, char* output) {
     output[input_len * 2] = '\0';  // Null-terminate the string
 }
 
-char* plaintext_to_binary(const char* input){
-    int input_len = strlen(input);
-    int binary_len = input_len * 8 + 1; // +1 for extra null terminator character
-    char* binary_string = (char*) calloc(binary_len, sizeof(char));
-    if(binary_string == NULL){
-        // handle mem allocation failure
-        perror("Error: Memory allocation failed");
-        exit(1);
-    }
-
-    binary_string[0] = '\0';
-
-    for(int i = 0; input[i] != '\0'; i++){
-        unsigned char c = input[i]; // current character
-        char temp[9]; // temp char string for one byte + null terminator
-        for(int j = 7; j >= 0; j--){
-            temp[7-j] = ((c >> j) & 1) + '0'; 
-        }
-        temp[8] = '\0'; // null terminate
-
-        strcat(binary_string, temp);
-    }
-
-    return binary_string;
-}
-
 // Check if the input is a pure binary string
 bool is_binary_string(const char* input) {
     // Empty string is not considered binary
@@ -258,7 +233,50 @@ char *base64_encode(const uint8_t *data, size_t input_length) {
     return encoded_data;
 }
 
-// CHALLENGE functions
+char* read_file(char* filename){
+
+    FILE* file = fopen(filename, "rb"); // Open in binary mode
+    if (file == NULL) {
+        perror("Error opening file");
+        return NULL;
+    }
+
+    // Determine file size
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    if (file_size < 0) {
+        fclose(file);
+        perror("Error getting file size");
+        return NULL;
+    }
+
+    // Allocate memory for the file contents
+    char* buffer = (char*)malloc(file_size + 1); // +1 for null terminator
+    if (buffer == NULL) {
+        fclose(file);
+        perror("Error allocating memory");
+        return NULL;
+    }
+
+    // Read the file into the buffer
+    size_t bytes_read = fread(buffer, 1, file_size, file);
+    if (bytes_read != file_size) {
+        fclose(file);
+        free(buffer);
+        perror("Error reading file");
+        return NULL;
+    }
+
+    buffer[file_size] = '\0'; // Null-terminate the buffer
+    fclose(file);
+    return buffer;
+}
+
+
+
+// CHALLENGE FUNCTIONS:
 // HextoB64
 void hex_to_base64(const char *hex_string) {
     uint8_t *raw_bytes = NULL;
@@ -507,10 +525,10 @@ void detect_char_xor(const char* filename) {
 }
 
 // RepeatingKeyXOR
-struct string_size repeating_key_xor(const char* plaintext, const char* key) {
+struct string_size repeating_key_xor(const char* input, const char* key, bool to_hex) {
     // Calculate lengths of input strings
     size_t key_length = strlen(key);
-    size_t length = strlen(plaintext);
+    size_t length = strlen(input);
 
     // Allocate memory for output string (+1 for null-termination)
     char* output_str = (char*)malloc((length + 1) * sizeof(char));
@@ -521,197 +539,321 @@ struct string_size repeating_key_xor(const char* plaintext, const char* key) {
 
     // Apply XOR operation with repeating key
     for (size_t i = 0; i < length; i++) {
-        // XOR the current plaintext char with the corresponding key char
-        output_str[i] = plaintext[i] ^ key[i % key_length];
+        // XOR the current input char with the corresponding key char
+        output_str[i] = input[i] ^ key[i % key_length];
     }
 
     // Null-terminate the string
     output_str[length] = '\0';
 
-    // Create struct and declare the member variables
+    // Create struct for return
     struct string_size output_data = {NULL, 0};
-    output_data.string = output_str;
-    output_data.size = length;
-
-    size_t hex_len = output_data.size * 2 + 1;
-    char *hex_output = (char *)malloc(hex_len);
     
-    if (hex_output == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        free(hex_output);
-        exit(1);
+    // If to_hex is true, convert to hex string
+    if (to_hex) {
+        size_t hex_len = length * 2 + 1;
+        char *hex_output = (char *)malloc(hex_len);
+        
+        if (hex_output == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            free(output_str);
+            exit(1);
+        }
+        
+        // Convert to hex string
+        hex_encode(output_str, length, hex_output);
+        
+        output_data.string = hex_output;
+        output_data.size = hex_len - 1;  // -1 for null terminator
+        free(output_str);
+    } else {
+        // Just use the XOR result directly
+        output_data.string = output_str;
+        output_data.size = length;
     }
-    
-    // Convert to hex string
-    hex_encode(output_data.string, output_data.size, hex_output);
 
-    output_data.string = hex_output;
-    free(output_str);
     return output_data; // The caller is responsible for freeing output_data.string
 }
 
 // Break Viginere (Repeating_Key_XOR) Cipher:
 
-int compute_hamming_distance(const char* buffer1, const char* buffer2){
-    /*
-    Function to compute the hamming distance (amount of differing bits) between two buffers
-    */
-
-    char* binary1 = NULL;
-    char* binary2 = NULL;
-
-    // Convert to binary if needed
-    if(!is_binary_string(buffer1)){
-        binary1 = plaintext_to_binary(buffer1);
-        buffer1 = binary1;
-    }
-
-    if(!is_binary_string(buffer2)){
-        binary2 = plaintext_to_binary(buffer2);
-        buffer2 = binary2;
-    }
-
-    // Check if binary strings have equal length
-    size_t len1 = strlen(buffer1);
-    size_t len2 = strlen(buffer2);
-    
-    if (len1 != len2) {
-        // Free allocated memory if any
-        free(binary1);
-        free(binary2);
+int compute_hamming_distance(const uint8_t* buffer1, const uint8_t* buffer2, size_t length) {
+    if (buffer1 == NULL || buffer2 == NULL) {
         return -1;
     }
 
     int hamming_distance = 0;
-    for(size_t i = 0; i < len1; i++){
-        if(buffer1[i] != buffer2[i]){
-            hamming_distance++;
+
+    for (size_t i = 0; i < length; i++) {
+        unsigned char b1 = buffer1[i];
+        unsigned char b2 = buffer2[i];
+
+        // XOR the bytes and count the differing bits
+        unsigned char val = b1 ^ b2;
+        while (val > 0) {
+            hamming_distance += val & 1;
+            val >>= 1;
         }
     }
 
-    free(binary1);
-    free(binary2);
     return hamming_distance;
 }
 
-DataAndKey break_viginere_cipher(const char* ciphertext, size_t size){
-    DataAndKey output_data = {NULL, NULL, 0};
-    
+int find_key_size(const uint8_t* ciphertext, size_t length) {
+    int min_key_size = 2;
+    int max_key_size = 40;
 
-}
+    int best_key_size = 0;
+    float best_distance = (float)length;
 
+    int double_key_size = 0;
+    int blocks = 0;
+    int distance = 0;
 
-
-
-// HASH MAP: 
-
-unsigned int hash(const char* key, int capacity) {
-    /*
-    A basic hash function
-    */ 
-    unsigned long hash = 5381;
-    int c;
-
-    while ((c = *key++)) {
-        hash = ((hash << 5) + hash) + c; // hash * 33 + c
-    }
-
-    return hash % capacity;
-}
-
-// Function to create a new hashmap
-HashMap* createHashMap(int capacity) {
-    HashMap* map = (HashMap*)malloc(sizeof(HashMap));
-    if (map == NULL) {
-        // Error handling for failed mem allocation
-        return NULL; 
-    }
-
-    map->capacity = capacity;
-    map->size = 0;
-    map->items = (KeyValuePair**)calloc(capacity, sizeof(KeyValuePair*));
-    // Error handling for failed mem allocation
-    if (map->items == NULL) {
-        free(map);
-        return NULL; 
-    }
-
-    return map;
-}
-
-void insert(HashMap* map, const char* key, int value) {
-    /*
-    Function to insert a key-value pair into the hashmap
-    */ 
-    if (map == NULL || key == NULL) {
-        return;
-    }
-
-    unsigned int index = hash(key, map->capacity);
-
-    // Simple linear probing for collision resolution
-    while (map->items[index] != NULL) {
-        if (strcmp(map->items[index]->key, key) == 0) {
-            // Key already exists, update the value
-            map->items[index]->value = value;
-            return;
+    // Loop through all key sizes 2 - 40
+    for(int key_size = min_key_size; key_size <= max_key_size; key_size++) {
+        double_key_size = key_size * 2;
+        blocks = length / double_key_size - 1;
+        if(blocks <= 2) {
+            // not enough blocks to be meaningful
+            continue;
         }
-        index = (index + 1) % map->capacity; // Move to the next slot
-    }
 
-    // Create a new key-value pair
-    KeyValuePair* pair = (KeyValuePair*)malloc(sizeof(KeyValuePair));
-    if (pair == NULL) {
-        return; // Allocation failed
-    }
+        distance = 0;
 
-    pair->key = strdup(key); // Duplicate the key string
-    if (pair->key == NULL) {
-        free(pair);
-        return; // Allocation failed
-    }
-    pair->value = value;
+        // Compare blocks
+        for (int block = 0; block < blocks; block++) {
+            const uint8_t* block1 = ciphertext + block * double_key_size;
+            const uint8_t* block2 = block1 + key_size;
 
-    map->items[index] = pair;
-    map->size++;
+            // Compute Hamming distance between blocks
+            int hamming = compute_hamming_distance(block1, block2, key_size);
+            if (hamming < 0) {
+                fprintf(stderr, "Error computing Hamming distance\n");
+                return -1; // Return an error if the function fails
+            }
+            
+            distance += hamming;
+        }
+
+        float normalized_distance = ((float)distance / key_size) / blocks;
+
+        if (normalized_distance < best_distance) {
+            best_distance = normalized_distance;
+            best_key_size = key_size;
+        }
+    }
+    return best_key_size;
 }
 
-int* get(HashMap* map, const char* key) {
-    /*
-    Function to retrieve a value from the hashmap
-    */
-    if (map == NULL || key == NULL) {
+char* find_key(int key_size, const uint8_t* ciphertext, size_t ciphertext_len) {
+    // Allocate memory for blocks
+    uint8_t** blocks = (uint8_t**)malloc(key_size * sizeof(uint8_t*));
+    if (blocks == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
+    for (int i = 0; i < key_size; i++) {
+        blocks[i] = (uint8_t*)malloc((ciphertext_len / key_size + 1) * sizeof(uint8_t));
+        if (blocks[i] == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            for (int j = 0; j < i; j++) {
+                free(blocks[j]);
+            }
+            free(blocks);
+            return NULL;
+        }
+    }
+
+    // Break ciphertext into blocks of key_size length
+    for (size_t i = 0; i < ciphertext_len; i++) {
+        blocks[i % key_size][i / key_size] = ciphertext[i];
+    }
+
+    // Allocate memory for transposed blocks
+    uint8_t** transposed_blocks = (uint8_t**)malloc(key_size * sizeof(uint8_t*));
+    if (transposed_blocks == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        for (int i = 0; i < key_size; i++) {
+            free(blocks[i]);
+        }
+        free(blocks);
+        return NULL;
+    }
+    for (int i = 0; i < key_size; i++) {
+        transposed_blocks[i] = (uint8_t*)malloc((ciphertext_len / key_size + 1) * sizeof(uint8_t));
+        if (transposed_blocks[i] == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            for (int j = 0; j < i; j++) {
+                free(transposed_blocks[j]);
+            }
+            for (int j = 0; j < key_size; j++) {
+                free(blocks[j]);
+            }
+            free(blocks);
+            free(transposed_blocks);
+            return NULL;
+        }
+    }
+
+    // Transpose the blocks
+    for (int i = 0; i < key_size; i++) {
+        for (size_t j = 0; j < ciphertext_len / key_size; j++) {
+            transposed_blocks[i][j] = blocks[i][j];
+        }
+    }
+
+    // Solve each block as if it was single-character XOR
+    char* the_key = (char*)malloc(key_size + 1);
+    if (the_key == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        for (int i = 0; i < key_size; i++) {
+            free(blocks[i]);
+            free(transposed_blocks[i]);
+        }
+        free(blocks);
+        free(transposed_blocks);
         return NULL;
     }
 
-    unsigned int index = hash(key, map->capacity);
+    for (int i = 0; i < key_size; i++) {
+        int best_score = 0;
+        char best_key_byte = 0;
 
-    // Search for the key using linear probing
-    while (map->items[index] != NULL) {
-        if (strcmp(map->items[index]->key, key) == 0) {
-            return &map->items[index]->value; // Return the address of the value
+        for (int k = 0; k < 256; k++) {
+            uint8_t key = (uint8_t)k;
+            uint8_t* decrypted = (uint8_t*)malloc(ciphertext_len / key_size + 1);
+            if (decrypted == NULL) {
+                uint8_t* decrypted = (uint8_t*)malloc(ciphertext_len / key_size + 1);
+                if (decrypted == NULL) {
+                    fprintf(stderr, "Memory allocation failed\n");
+                    free(the_key);
+                    for (int j = 0; j < key_size; j++) {
+                        free(blocks[j]);
+                        free(transposed_blocks[j]);
+                    }
+                    free(blocks);
+                    free(transposed_blocks);
+                    return NULL;
+                }
+
+                // Use single_byte_xor function to find the character used on each block
+                struct scoring_data xor_result = single_byte_xor((char*)transposed_blocks[i]);
+                if (xor_result.decrypted == NULL) {
+                    fprintf(stderr, "Error in single_byte_xor function\n");
+                    free(decrypted);
+                    free(the_key);
+                    for (int j = 0; j < key_size; j++) {
+                        free(blocks[j]);
+                        free(transposed_blocks[j]);
+                    }
+                    free(blocks);
+                    free(transposed_blocks);
+                    return NULL;
+                }
+
+                int score = xor_result.score;
+                if (score > best_score) {
+                    best_score = score;
+                    best_key_byte = xor_result.key;
+                }
+
+                free(xor_result.decrypted);
+                free(decrypted);
+                free(the_key);
+                for (int j = 0; j < key_size; j++) {
+                    free(blocks[j]);
+                    free(transposed_blocks[j]);
+                }
+                free(blocks);
+                free(transposed_blocks);
+                return NULL;
+            }
+
+            for (size_t j = 0; j < ciphertext_len / key_size; j++) {
+                decrypted[j] = transposed_blocks[i][j] ^ key;
+            }
+
+            int score = score_text((char*)decrypted, ciphertext_len / key_size);
+            if (score > best_score) {
+                best_score = score;
+                best_key_byte = key;
+            }
+
+            free(decrypted);
         }
-        index = (index + 1) % map->capacity;
+
+        the_key[i] = best_key_byte;
     }
 
-    return NULL; // Key not found
+    the_key[key_size] = '\0';
+
+    // Free allocated memory
+    for (int i = 0; i < key_size; i++) {
+        free(blocks[i]);
+        free(transposed_blocks[i]);
+    }
+    free(blocks);
+    free(transposed_blocks);
+
+    return the_key;
 }
 
-void freeHashMap(HashMap* map) {
-    /*
-    Function to free the hashmap's memory
-    */
-    if (map == NULL) {
+DataAndKey break_viginere_cipher(uint8_t* ciphertext, size_t size) {
+    DataAndKey result = {NULL, NULL, 0};
+    
+    // Find the key size
+    int key_size = find_key_size(ciphertext, size);
+        
+    if (key_size <= 0) {
+        fprintf(stderr, "Error finding key size\n");
+        return result;
+    }
+    
+    // Find the key
+    char* key = find_key(key_size, ciphertext, size);
+    if (key == NULL) {
+        fprintf(stderr, "Error finding key\n");
+        return result;
+    }
+    
+    // Allocate memory for the decrypted data
+    char* decrypted_data = malloc(size + 1);
+    if (decrypted_data == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        free(key);
+        return result;
+    }
+    
+    // Decrypt the ciphertext using the key
+    for (size_t i = 0; i < size; i++) {
+        decrypted_data[i] = ciphertext[i] ^ key[i % key_size];
+    }
+    
+    // Add null terminator
+    decrypted_data[size] = '\0';
+    
+    result.data = decrypted_data;
+    result.key = key;
+    result.key_size = key_size;
+    
+    return result;
+}
+
+void strip_newlines(char* str) {
+    if (str == NULL) {
         return;
     }
 
-    for (int i = 0; i < map->capacity; i++) {
-        if (map->items[i] != NULL) {
-            free(map->items[i]->key);
-            free(map->items[i]);
+    char* read_ptr = str;
+    char* write_ptr = str;
+
+    while (*read_ptr != '\0') {
+        if (*read_ptr != '\n') {
+            *write_ptr++ = *read_ptr;
         }
+        read_ptr++;
     }
 
-    free(map->items);
-    free(map);
+    *write_ptr = '\0'; // Null-terminate the modified string
 }
